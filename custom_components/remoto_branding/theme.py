@@ -37,6 +37,8 @@ def build_theme(primary: str) -> dict:
         "modes": {
             "dark": {
                 "primary-color": DARK_PRIMARY,
+                # Text on teal-soft needs to be dark to stay readable.
+                "text-primary-color": "#1B1433",
                 "app-header-background-color": "#2B1F52",
                 "sidebar-selected-icon-color": DARK_PRIMARY,
                 "sidebar-selected-text-color": DARK_PRIMARY,
