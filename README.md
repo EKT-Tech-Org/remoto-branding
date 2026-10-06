@@ -13,7 +13,7 @@ Docker and HA OS, both locally and through Nabu Casa remote access.
 | `deploy/` | Pinned docker-compose for local testing + `install.sh` for client boxes |
 | `tests/e2e/` | Playwright check: no visible upstream branding |
 | `.github/workflows/ha-compat.yml` | Weekly test against the newest upstream release |
-| `tools/` | Icon generation |
+| `brand/` | Official Remoto logos and favicons (source of truth; icons in `www/icons` are copied from here) |
 
 ## Client-install checklist
 

@@ -1,0 +1,20 @@
+# Remoto brand: purple #553D9F (R, wordmark), teal #59C7C4 (tile), teal-soft #7ED3CA (on dark).
+# Copy to <config>/themes/ and enable with:
+#   frontend:
+#     themes: !include_dir_merge_named themes
+Remoto:
+  primary-color: "#553D9F"
+  accent-color: "#59C7C4"
+  app-header-background-color: "#553D9F"
+  app-header-text-color: "#FFFFFF"
+  sidebar-selected-icon-color: "#553D9F"
+  sidebar-selected-text-color: "#553D9F"
+  state-icon-active-color: "#59C7C4"
+  ha-card-border-radius: "16px"
+  modes:
+    dark:
+      primary-color: "#7ED3CA"
+      accent-color: "#59C7C4"
+      app-header-background-color: "#2B1F52"
+      sidebar-selected-icon-color: "#7ED3CA"
+      sidebar-selected-text-color: "#7ED3CA"

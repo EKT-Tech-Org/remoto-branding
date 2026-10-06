@@ -1,0 +1,12 @@
+{
+  "name": "remoto-branding-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup:ha": "node tests/e2e/setup-ha.mjs",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

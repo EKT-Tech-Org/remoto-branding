@@ -1,0 +1,62 @@
+name: HA compatibility
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 4" # Thursdays, the day after upstream monthly/patch releases
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [pinned, stable]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [ "${{ matrix.channel }}" = "pinned" ]; then
+            echo "tag=$(grep ^HA_VERSION deploy/.env | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=stable" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Start instance
+        run: |
+          mkdir -p ci-config/custom_components
+          cp deploy/config/configuration.yaml ci-config/
+          cp -r custom_components/remoto_branding ci-config/custom_components/
+          cp -r themes ci-config/themes
+          docker run -d --name ha -p 8123:8123 -v "$PWD/ci-config:/config" \
+            ghcr.io/home-assistant/home-assistant:${{ steps.tag.outputs.tag }}
+          docker exec ha python -c "from homeassistant.const import __version__; print('version', __version__)" || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: npm install && npx playwright install --with-deps chromium
+
+      - name: Onboard and configure
+        run: npm run setup:ha
+
+      - name: Branding checks
+        run: npm run test:e2e
+
+      - name: Logs on failure
+        if: failure()
+        run: docker logs ha | tail -200
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-${{ matrix.channel }}
+          path: |
+            test-results/
+            playwright-report/
