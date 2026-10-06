@@ -13,7 +13,7 @@ import homeassistant.components.default_config as dc
 
 upstream = set(json.loads((Path(dc.__file__).parent / "manifest.json").read_text())["dependencies"])
 upstream.discard("zeroconf")
-ours = set(re.findall(r"^([a-z_]+):", Path(sys.argv[1]).read_text(), re.M))
+ours = set(re.findall(r"^([a-z0-9_]+):", Path(sys.argv[1]).read_text(), re.M))
 missing = sorted(upstream - ours)
 if missing:
     sys.exit(f"configuration is missing upstream default_config items: {missing}")
