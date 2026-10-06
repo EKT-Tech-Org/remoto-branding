@@ -13,6 +13,8 @@ const UPSTREAM = /Home[\s ]?Assistant/g;
 const ATTRS = ["title", "aria-label", "placeholder", "alt", "label", "heading", "header"];
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "TEXTAREA", "CODE", "PRE", "HA-CODE-EDITOR"]);
 const LOGO_SRC = /\/static\/icons\/|home-assistant|\/static\/images\/logo/;
+// Help / docs links that point at upstream sites are hidden.
+const UPSTREAM_LINK = /home-assistant\.io|nabucasa\.com|openhomefoundation\.org/;
 
 const safe = (fn) => {
   try {
@@ -85,6 +87,9 @@ const brandElement = (el) => {
   if (el.tagName === "IMG" && LOGO_SRC.test(el.getAttribute("src") || "")) {
     el.src = `${BASE}/icons/logo.svg?v=${VERSION}`;
   }
+  if (el.tagName === "A" && UPSTREAM_LINK.test(el.getAttribute("href") || "")) {
+    el.style.display = "none";
+  }
 };
 
 const walk = (root) => {
@@ -147,7 +152,7 @@ function observe(root) {
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ATTRS.concat("src"),
+    attributeFilter: ATTRS.concat("src", "href"),
   });
 }
 

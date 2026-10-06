@@ -19,6 +19,7 @@ from .const import (
     DOMAIN,
     URL_BASE,
 )
+from .login_page import async_patch_login_page
 
 WWW_DIR = Path(__file__).parent / "www"
 
@@ -53,6 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     url = _script_url(entry, str(integration.version))
     add_extra_js_url(hass, url)
     domain_data["script_url"] = url
+    domain_data["restore_login"] = await async_patch_login_page(hass, url)
 
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True
@@ -62,6 +64,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Stop injecting the branding script."""
     if url := hass.data.get(DOMAIN, {}).pop("script_url", None):
         remove_extra_js_url(hass, url)
+    if restore := hass.data.get(DOMAIN, {}).pop("restore_login", None):
+        restore()
     return True
 
 

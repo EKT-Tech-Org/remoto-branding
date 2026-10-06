@@ -53,11 +53,11 @@ test("login page is rebranded", async ({ page }) => {
   const frame = await loginFrame(page);
   await page.waitForTimeout(1000);
   await page.screenshot({ path: "test-results/login.png", fullPage: true });
-  // Soft: the login page may not load extra frontend modules on every release.
-  expect.soft(await page.title()).not.toMatch(UPSTREAM);
+  expect(await page.title()).not.toMatch(UPSTREAM);
   const loaded = await frame.evaluate(() => !!document.getElementById("remoto-branding"));
   console.log(`login: remoto.js loaded=${loaded}, frame=${frame.url()}`);
-  expect.soft(await frame.evaluate(deepText)).not.toMatch(UPSTREAM);
+  expect(loaded, "remoto.js injected into login page").toBe(true);
+  expect(await frame.evaluate(deepText)).not.toMatch(UPSTREAM);
 });
 
 test("client pages show Remoto branding only", async ({ page }) => {
