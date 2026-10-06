@@ -27,24 +27,37 @@ const deepText = () => {
   return out.join("\n");
 };
 
+// The login form may live in an iframe, depending on the upstream release.
+const loginFrame = async (page) => {
+  for (let i = 0; i < 30; i++) {
+    for (const frame of page.frames()) {
+      if (await frame.getByRole("textbox", { name: /username/i }).count()) return frame;
+    }
+    await page.waitForTimeout(1000);
+  }
+  throw new Error("login form not found");
+};
+
 const login = async (page) => {
   await page.goto("/");
-  await page.getByLabel(/username/i).fill(CLIENT.username);
-  await page.getByLabel(/password/i).fill(CLIENT.password);
-  await page.getByRole("button", { name: /log in/i }).click();
+  const frame = await loginFrame(page);
+  await frame.getByRole("textbox", { name: /username/i }).fill(CLIENT.username);
+  await frame.getByRole("textbox", { name: /password/i }).fill(CLIENT.password);
+  await frame.getByRole("button", { name: /log in/i }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/auth"));
   await page.waitForTimeout(1500);
 };
 
 test("login page is rebranded", async ({ page }) => {
   await page.goto("/");
-  await page.waitForURL(/\/auth\/authorize/);
-  await page.getByLabel(/username/i).waitFor();
+  const frame = await loginFrame(page);
   await page.waitForTimeout(1000);
   await page.screenshot({ path: "test-results/login.png", fullPage: true });
   // Soft: the login page may not load extra frontend modules on every release.
   expect.soft(await page.title()).not.toMatch(UPSTREAM);
-  expect.soft(await page.evaluate(deepText)).not.toMatch(UPSTREAM);
+  const loaded = await frame.evaluate(() => !!document.getElementById("remoto-branding"));
+  console.log(`login: remoto.js loaded=${loaded}, frame=${frame.url()}`);
+  expect.soft(await frame.evaluate(deepText)).not.toMatch(UPSTREAM);
 });
 
 test("client pages show Remoto branding only", async ({ page }) => {
