@@ -5,13 +5,13 @@
         "title": "Remoto Branding",
         "data": {
           "brand_name": "Brand name",
-          "primary_color": "Primary color (hex, e.g. #0B6E4F)"
+          "primary_color": "Primary color (hex, e.g. #553D9F)"
         }
       }
     },
     "error": {
       "empty_name": "Brand name cannot be empty.",
-      "invalid_color": "Use a 6-digit hex color like #0B6E4F."
+      "invalid_color": "Use a 6-digit hex color like #553D9F."
     },
     "abort": {
       "single_instance_allowed": "Remoto Branding is already set up."
@@ -23,13 +23,13 @@
         "title": "Remoto Branding",
         "data": {
           "brand_name": "Brand name",
-          "primary_color": "Primary color (hex, e.g. #0B6E4F)"
+          "primary_color": "Primary color (hex, e.g. #553D9F)"
         }
       }
     },
     "error": {
       "empty_name": "Brand name cannot be empty.",
-      "invalid_color": "Use a 6-digit hex color like #0B6E4F."
+      "invalid_color": "Use a 6-digit hex color like #553D9F."
     }
   }
 }

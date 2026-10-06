@@ -44,7 +44,7 @@ def brand_html(markup: str, brand: str, version: str, script_url: str | None) ->
         "/static/images/home-assistant-logo-loading.svg": f"{URL_BASE}/icons/logo.svg{v}",
         'href="/manifest.json"': f'href="{URL_BASE}/manifest.json{v}"',
         "/static/icons/favicon-apple-180x180.png": f"{URL_BASE}/icons/apple-touch-icon.png{v}",
-        'href="/static/icons/favicon.ico"': f'href="{URL_BASE}/icons/favicon.png{v}"',
+        'href="/static/icons/favicon.ico"': f'type="image/svg+xml" href="{URL_BASE}/icons/favicon.svg{v}"',
     }
     for old, new in replacements.items():
         markup = markup.replace(old, new)

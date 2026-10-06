@@ -5,7 +5,7 @@
 
 const params = new URL(import.meta.url).searchParams;
 const BRAND = params.get("name") || "Remoto";
-const COLOR = params.get("color") || "#0B6E4F";
+const COLOR = params.get("color") || "#553D9F";
 const VERSION = params.get("v") || "0";
 const BASE = "/remoto";
 
@@ -54,7 +54,7 @@ const brandHead = () => {
   for (const el of document.head.querySelectorAll('link[rel~="icon"], link[rel="mask-icon"]')) {
     if (!el.href.includes(BASE)) el.remove();
   }
-  setLink("icon", `${BASE}/icons/favicon.png${v}`, { type: "image/png" });
+  setLink("icon", `${BASE}/icons/favicon.svg${v}`, { type: "image/svg+xml" });
   setLink("apple-touch-icon", `${BASE}/icons/apple-touch-icon.png${v}`);
   setLink("manifest", `${BASE}/manifest.json${v}`, { crossorigin: "use-credentials" });
   setMeta("apple-mobile-web-app-title", BRAND);

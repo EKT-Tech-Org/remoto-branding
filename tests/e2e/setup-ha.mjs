@@ -76,7 +76,7 @@ await post("/api/onboarding/integration", { client_id: CLIENT_ID, redirect_uri: 
 const flow = await post("/api/config/config_entries/flow", { handler: "remoto_branding" }, access_token);
 const entry = await post(
   `/api/config/config_entries/flow/${flow.flow_id}`,
-  { brand_name: "Remoto", primary_color: "#0B6E4F" },
+  { brand_name: "Remoto", primary_color: "#553D9F" },
   access_token
 );
 if (entry.type !== "create_entry") throw new Error(`config flow: ${JSON.stringify(entry)}`);
