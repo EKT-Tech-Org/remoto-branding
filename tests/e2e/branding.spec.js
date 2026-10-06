@@ -27,6 +27,12 @@ const deepText = () => {
   return out.join("\n");
 };
 
+// Wait until the launch screen is gone and the app has rendered.
+const appReady = async (page) => {
+  await page.waitForFunction(() => !document.getElementById("ha-launch-screen"), null, { timeout: 30_000 });
+  await page.waitForTimeout(1500);
+};
+
 // The login form may live in an iframe, depending on the upstream release.
 const loginFrame = async (page) => {
   for (let i = 0; i < 30; i++) {
@@ -45,7 +51,7 @@ const login = async (page) => {
   await frame.getByRole("textbox", { name: /password/i }).fill(CLIENT.password);
   await frame.getByRole("button", { name: /log in/i }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/auth"));
-  await page.waitForTimeout(1500);
+  await appReady(page);
 };
 
 test("login page is rebranded", async ({ page }) => {
@@ -73,7 +79,7 @@ test("client pages show Remoto branding only", async ({ page }) => {
 
   for (const path of PAGES) {
     await page.goto(path);
-    await page.waitForTimeout(2000);
+    await appReady(page);
     await page.screenshot({ path: `test-results/page${path.replaceAll("/", "_")}.png`, fullPage: true });
     expect(await page.title(), `title on ${path}`).not.toMatch(UPSTREAM);
     const text = await page.evaluate(deepText);
@@ -81,4 +87,14 @@ test("client pages show Remoto branding only", async ({ page }) => {
     expect(hit, `visible upstream name on ${path}`).toBeUndefined();
   }
   expect(scriptErrors).toEqual([]);
+});
+
+test("app shell is branded before the script runs", async ({ request }) => {
+  for (const path of ["/", "/auth/authorize"]) {
+    const html = await (await request.get(path)).text();
+    expect(html, `title in ${path}`).toMatch(/<title>Remoto<\/title>/);
+    expect(html, `itunes banner in ${path}`).not.toContain("apple-itunes-app");
+    expect(html, `launch logo in ${path}`).not.toContain("home-assistant-logo-loading");
+    expect(html, `footer hidden in ${path}`).toContain(".ohf-logo{display:none!important}");
+  }
 });

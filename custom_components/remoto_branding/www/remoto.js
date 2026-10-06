@@ -172,7 +172,7 @@ Element.prototype.attachShadow = function (init) {
 const brandColors = () => {
   const style = document.createElement("style");
   style.id = "remoto-branding";
-  style.textContent = `:root{--remoto-primary:${COLOR};}`;
+  style.textContent = `:root{--remoto-primary:${COLOR};}.ohf-logo{display:none!important}`;
   document.head.appendChild(style);
 };
 

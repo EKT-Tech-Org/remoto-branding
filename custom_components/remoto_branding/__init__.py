@@ -19,18 +19,22 @@ from .const import (
     DOMAIN,
     URL_BASE,
 )
-from .login_page import async_patch_login_page
+from .pages import async_patch_index, async_patch_login_page
 
 WWW_DIR = Path(__file__).parent / "www"
+
+
+def _brand(entry: ConfigEntry) -> str:
+    return entry.options.get(
+        CONF_BRAND_NAME, entry.data.get(CONF_BRAND_NAME, DEFAULT_BRAND_NAME)
+    )
 
 
 def _script_url(entry: ConfigEntry, version: str) -> str:
     """Build the script URL; options travel as query params read via import.meta.url."""
     params = {
         "v": version,
-        "name": entry.options.get(
-            CONF_BRAND_NAME, entry.data.get(CONF_BRAND_NAME, DEFAULT_BRAND_NAME)
-        ),
+        "name": _brand(entry),
         "color": entry.options.get(
             CONF_PRIMARY_COLOR,
             entry.data.get(CONF_PRIMARY_COLOR, DEFAULT_PRIMARY_COLOR),
@@ -51,10 +55,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         domain_data["static_registered"] = True
 
     integration = await async_get_integration(hass, DOMAIN)
-    url = _script_url(entry, str(integration.version))
+    version = str(integration.version)
+    brand = _brand(entry)
+    url = _script_url(entry, version)
     add_extra_js_url(hass, url)
     domain_data["script_url"] = url
-    domain_data["restore_login"] = await async_patch_login_page(hass, url)
+    domain_data["restore"] = [
+        undo
+        for undo in (
+            await async_patch_login_page(hass, brand, version, url),
+            await async_patch_index(hass, brand, version),
+        )
+        if undo
+    ]
 
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True
@@ -64,8 +77,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Stop injecting the branding script."""
     if url := hass.data.get(DOMAIN, {}).pop("script_url", None):
         remove_extra_js_url(hass, url)
-    if restore := hass.data.get(DOMAIN, {}).pop("restore_login", None):
-        restore()
+    for undo in hass.data.get(DOMAIN, {}).pop("restore", []):
+        undo()
     return True
 
 
