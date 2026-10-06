@@ -169,12 +169,41 @@ Element.prototype.attachShadow = function (init) {
 
 // ---------- theme color ----------
 
+// Newer components read a tonal palette (--ha-color-primary-05 … -95) rather than
+// --primary-color, so derive one from the brand color, keeping its hue and saturation.
+const hexToHsl = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => c / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (!d) return [0, 0, l * 100];
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h =
+    max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [(h * 60 + 360) % 360, s * 100, l * 100];
+};
+
+const primaryPalette = (hex) => {
+  const [h, s] = hexToHsl(hex);
+  return [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    .map((tone) => {
+      const value = tone === 40 ? hex : `hsl(${h.toFixed(1)} ${s.toFixed(1)}% ${tone}%)`;
+      return `--ha-color-primary-${String(tone).padStart(2, "0")}:${value};`;
+    })
+    .join("");
+};
+
 const brandColors = () => {
   const style = document.createElement("style");
   style.id = "remoto-branding";
   // A :root stylesheet loses to the inline styles of an active theme, so this only
   // changes the default colors, e.g. on the login page before any theme loads.
-  style.textContent = `:root{--remoto-primary:${COLOR};--primary-color:${COLOR};--dark-primary-color:${COLOR};--mdc-theme-primary:${COLOR};}.ohf-logo{display:none!important}`;
+  style.textContent =
+    `:root{--remoto-primary:${COLOR};--primary-color:${COLOR};--dark-primary-color:${COLOR};` +
+    `--mdc-theme-primary:${COLOR};${primaryPalette(COLOR)}}` +
+    ".ohf-logo{display:none!important}";
   document.head.appendChild(style);
 };
 
