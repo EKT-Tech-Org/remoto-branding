@@ -1,0 +1,18 @@
+# Copy to <config>/themes/ and enable with:
+#   frontend:
+#     themes: !include_dir_merge_named themes
+Remoto:
+  primary-color: "#0B6E4F"
+  accent-color: "#F4A261"
+  app-header-background-color: "#0B6E4F"
+  app-header-text-color: "#FFFFFF"
+  sidebar-selected-icon-color: "#0B6E4F"
+  sidebar-selected-text-color: "#0B6E4F"
+  state-icon-active-color: "#F4A261"
+  ha-card-border-radius: "16px"
+  modes:
+    dark:
+      primary-color: "#2FB386"
+      app-header-background-color: "#0E2A22"
+      sidebar-selected-icon-color: "#2FB386"
+      sidebar-selected-text-color: "#2FB386"

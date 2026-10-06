@@ -1,0 +1,8 @@
+Remoto Branding
+Copyright 2026 EKT Tech
+
+This package is a plugin for, and is distributed for use with, Apache-2.0
+licensed open-source home-automation software. That software's copyright
+notices and license terms remain in force; see LICENSE (Apache License 2.0).
+This plugin changes only presentation (names, icons, colors) at runtime and
+does not modify the upstream source files.
