@@ -1,9 +1,13 @@
-# Local test instance (and template for client boxes).
-# Start: docker compose -f deploy/docker-compose.yml up -d  -> http://localhost:8123
+# Local test instance, built from this repo.
+#   docker compose -f deploy/docker-compose.yml up -d --build   -> http://localhost:8123
 services:
   homeassistant:
     container_name: remoto
-    image: ghcr.io/home-assistant/home-assistant:${HA_VERSION}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        HA_VERSION: ${HA_VERSION}
     restart: unless-stopped
     environment:
       - TZ=${TZ}
@@ -11,5 +15,3 @@ services:
       - "8123:8123"
     volumes:
       - ./config:/config
-      - ../custom_components/remoto_branding:/config/custom_components/remoto_branding:ro
-      - ../themes:/config/themes:ro

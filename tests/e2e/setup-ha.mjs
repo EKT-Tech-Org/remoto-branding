@@ -73,13 +73,18 @@ await post("/api/onboarding/core_config", {}, access_token);
 await post("/api/onboarding/analytics", {}, access_token);
 await post("/api/onboarding/integration", { client_id: CLIENT_ID, redirect_uri: `${HA}/?auth_callback=1` }, access_token);
 
-const flow = await post("/api/config/config_entries/flow", { handler: "remoto_branding" }, access_token);
-const entry = await post(
-  `/api/config/config_entries/flow/${flow.flow_id}`,
-  { brand_name: "Remoto", primary_color: "#553D9F" },
-  access_token
-);
-if (entry.type !== "create_entry") throw new Error(`config flow: ${JSON.stringify(entry)}`);
+// The image enables the integration through configuration.yaml; nothing to click.
+const get = async (path) => {
+  const res = await fetch(HA + path, { headers: { Authorization: `Bearer ${access_token}` } });
+  if (!res.ok) throw new Error(`${path} → ${res.status}`);
+  return res.json();
+};
+let entries = [];
+for (let i = 0; i < 15 && !entries.length; i++) {
+  entries = await get("/api/config/config_entries/entry?domain=remoto_branding");
+  if (!entries.length) await new Promise((r) => setTimeout(r, 2000));
+}
+if (entries[0]?.state !== "loaded") throw new Error(`integration not auto-configured: ${JSON.stringify(entries)}`);
 
 const conn = await ws(access_token);
 const { user } = await conn.call({
@@ -93,5 +98,8 @@ await conn.call({
   user_id: user.id,
   ...CLIENT,
 });
+const themes = await conn.call({ type: "frontend/get_themes" });
+if (themes.default_theme !== "Remoto" || !themes.themes.Remoto)
+  throw new Error(`Remoto theme not default: ${themes.default_theme}`);
 conn.close();
-console.log("✓ onboarded, Remoto Branding added, non-admin user 'client' created");
+console.log("✓ onboarded; integration auto-configured; Remoto theme is default; client user created");

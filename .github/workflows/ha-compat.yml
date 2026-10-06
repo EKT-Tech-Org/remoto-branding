@@ -7,17 +7,27 @@ on:
   schedule:
     - cron: "0 6 * * 4" # Thursdays, the day after upstream monthly/patch releases
 
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/ekt-tech-org/remoto
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        channel: [pinned, stable]
+        include:
+          - { channel: pinned, start: fresh }
+          - { channel: pinned, start: existing }
+          - { channel: stable, start: fresh }
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve image tag
+      - name: Resolve upstream tag
         id: tag
         run: |
           if [ "${{ matrix.channel }}" = "pinned" ]; then
@@ -26,15 +36,31 @@ jobs:
             echo "tag=stable" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Start instance
+      - name: Build Remoto image
         run: |
-          mkdir -p ci-config/custom_components
-          cp deploy/config/configuration.yaml ci-config/
-          cp -r custom_components/remoto_branding ci-config/custom_components/
-          cp -r themes ci-config/themes
-          docker run -d --name ha -p 8123:8123 -v "$PWD/ci-config:/config" \
-            ghcr.io/home-assistant/home-assistant:${{ steps.tag.outputs.tag }}
-          docker exec ha python -c "from homeassistant.const import __version__; print('version', __version__)" || true
+          docker build -f docker/Dockerfile --build-arg HA_VERSION=${{ steps.tag.outputs.tag }} -t remoto:test .
+          V=$(docker run --rm --entrypoint python3 remoto:test -c "from homeassistant.const import __version__; print(__version__)")
+          B=$(python3 -c "import json;print(json.load(open('custom_components/remoto_branding/manifest.json'))['version'])")
+          echo "HA_FULL=$V" >> "$GITHUB_ENV"
+          echo "BRANDING=$B" >> "$GITHUB_ENV"
+          echo "upstream $V, branding $B"
+
+      - name: Check default_config list against upstream
+        run: |
+          for f in docker/configuration.yaml; do
+            docker run --rm --entrypoint python3 -v "$PWD/tests/check_default_config.py:/check.py:ro" \
+              -v "$PWD/$f:/conf.yaml:ro" remoto:test /check.py /conf.yaml
+          done
+
+      - name: Start instance (${{ matrix.start }} box)
+        run: |
+          mkdir -p ci-config
+          if [ "${{ matrix.start }}" = "existing" ]; then
+            # An existing box: its own config, no Remoto anywhere yet.
+            printf 'default_config:\nfrontend:\n' > ci-config/configuration.yaml
+          fi
+          docker run -d --name ha -p 8123:8123 -v "$PWD/ci-config:/config" remoto:test
+          sleep 5 && docker logs ha 2>&1 | grep "\[remoto\]"
 
       - uses: actions/setup-node@v4
         with:
@@ -43,11 +69,15 @@ jobs:
       - name: Install Playwright
         run: npm install && npx playwright install --with-deps chromium
 
-      - name: Onboard and configure
+      - name: Onboard and verify auto-setup
         run: npm run setup:ha
 
       - name: Branding checks
         run: npm run test:e2e
+
+      - name: Config warnings
+        if: always()
+        run: docker logs ha 2>&1 | grep -iE "does not support YAML|invalid config|setup failed|remoto" || true
 
       - name: Logs on failure
         if: failure()
@@ -56,7 +86,22 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: screenshots-${{ matrix.channel }}
+          name: screenshots-${{ matrix.channel }}-${{ matrix.start }}
           path: |
             test-results/
             playwright-report/
+
+      # Only images that passed every check above are published.
+      - name: Publish image
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.start == 'fresh'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag remoto:test $IMAGE:$HA_FULL
+          docker tag remoto:test $IMAGE:$HA_FULL-$BRANDING
+          docker push $IMAGE:$HA_FULL
+          docker push $IMAGE:$HA_FULL-$BRANDING
+          if [ "${{ matrix.channel }}" = "pinned" ]; then
+            docker tag remoto:test $IMAGE:latest
+            docker push $IMAGE:latest
+          fi
+          echo "### Published \`$IMAGE:$HA_FULL\`" >> "$GITHUB_STEP_SUMMARY"

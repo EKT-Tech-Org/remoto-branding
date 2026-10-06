@@ -1,0 +1,32 @@
+# Starter configuration written by the Remoto image on a brand-new box.
+homeassistant:
+  name: "Remoto"
+
+# The usual defaults, minus zeroconf (it announces the upstream product name on the LAN).
+assist_pipeline:
+backup:
+bluetooth:
+cloud:
+conversation:
+dhcp:
+energy:
+file:
+go2rtc:
+history:
+homeassistant_alerts:
+logbook:
+media_source:
+mobile_app:
+my:
+ssdp:
+stream:
+sun:
+usage_prediction:
+usb:
+webhook:
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+remoto_branding:
