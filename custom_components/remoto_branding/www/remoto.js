@@ -172,7 +172,9 @@ Element.prototype.attachShadow = function (init) {
 const brandColors = () => {
   const style = document.createElement("style");
   style.id = "remoto-branding";
-  style.textContent = `:root{--remoto-primary:${COLOR};}.ohf-logo{display:none!important}`;
+  // A :root stylesheet loses to the inline styles of an active theme, so this only
+  // changes the default colors, e.g. on the login page before any theme loads.
+  style.textContent = `:root{--remoto-primary:${COLOR};--primary-color:${COLOR};--dark-primary-color:${COLOR};--mdc-theme-primary:${COLOR};}.ohf-logo{display:none!important}`;
   document.head.appendChild(style);
 };
 
