@@ -1,0 +1,5 @@
+# Scripts and configs run on Linux boxes; never check them out with CRLF.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.csv -text

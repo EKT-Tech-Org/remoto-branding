@@ -1,66 +1,82 @@
 name: HA compatibility
 
+# Follows upstream: tests the branding on the current stable and beta versions,
+# and releases every stable version it passes on. A release named
+# <upstream>-<branding> is what client boxes install (deploy/client/update.sh).
+
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * 4" # Thursdays, the day after upstream monthly/patch releases
+    - cron: "0 5 * * *" # daily: upstream ships monthly, patch releases on any day
 
 permissions:
-  contents: read
-  packages: write
+  contents: write # create the release
+  issues: write # report a failed run
 
 env:
-  IMAGE: ghcr.io/ekt-tech-org/remoto
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
-  e2e:
+  resolve:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { channel: pinned, start: fresh }
-          - { channel: pinned, start: existing }
-          - { channel: stable, start: fresh }
+    outputs:
+      stable: ${{ steps.v.outputs.stable }}
+      branding: ${{ steps.v.outputs.branding }}
+      released: ${{ steps.v.outputs.released }}
+      matrix: ${{ steps.v.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve upstream tag
-        id: tag
+      - name: Read upstream versions
+        id: v
         run: |
-          if [ "${{ matrix.channel }}" = "pinned" ]; then
-            echo "tag=$(grep ^HA_VERSION deploy/.env | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          stable=$(curl -fsSL https://version.home-assistant.io/stable.json | jq -er .homeassistant.default)
+          beta=$(curl -fsSL https://version.home-assistant.io/beta.json | jq -er .homeassistant.default)
+          branding=$(jq -er .version custom_components/remoto_branding/manifest.json)
+          # A pre-release is a pair that passed the checks but not the install smoke test.
+          if [ "$(gh release view "$stable-$branding" --json isPrerelease --jq .isPrerelease 2>/dev/null)" = "false" ]; then
+            released=true
           else
-            echo "tag=stable" >> "$GITHUB_OUTPUT"
+            released=false
           fi
 
-      - name: Build Remoto image
-        run: |
-          docker build -f docker/Dockerfile --build-arg HA_VERSION=${{ steps.tag.outputs.tag }} -t remoto:test .
-          V=$(docker run --rm --entrypoint python3 remoto:test -c "from homeassistant.const import __version__; print(__version__)")
-          B=$(python3 -c "import json;print(json.load(open('custom_components/remoto_branding/manifest.json'))['version'])")
-          echo "HA_FULL=$V" >> "$GITHUB_ENV"
-          echo "BRANDING=$B" >> "$GITHUB_ENV"
-          echo "upstream $V, branding $B"
-
-      - name: Check default_config list against upstream
-        run: |
-          for f in docker/configuration.yaml; do
-            docker run --rm --entrypoint python3 -v "$PWD/tests/check_default_config.py:/check.py:ro" \
-              -v "$PWD/$f:/conf.yaml:ro" remoto:test /check.py /conf.yaml
-          done
-
-      - name: Start instance (${{ matrix.start }} box)
-        run: |
-          mkdir -p ci-config
-          if [ "${{ matrix.start }}" = "existing" ]; then
-            # An existing box: its own config, no Remoto anywhere yet.
-            printf 'default_config:\nfrontend:\n' > ci-config/configuration.yaml
+          legs=()
+          # The daily run skips a stable pair that is already released.
+          if [ "$released" = false ] || [ "${{ github.event_name }}" != "schedule" ]; then
+            legs+=("{\"channel\":\"stable\",\"start\":\"fresh\",\"ha\":\"$stable\"}")
+            legs+=("{\"channel\":\"stable\",\"start\":\"existing\",\"ha\":\"$stable\"}")
           fi
-          docker run -d --name ha -p 8123:8123 -v "$PWD/ci-config:/config" remoto:test
-          sleep 5 && docker logs ha 2>&1 | grep "\[remoto\]"
+          # Outside a beta period the beta channel equals stable.
+          if [ "$beta" != "$stable" ]; then
+            legs+=("{\"channel\":\"beta\",\"start\":\"fresh\",\"ha\":\"$beta\"}")
+          fi
+          matrix=$(printf '%s\n' "${legs[@]}" | jq -sc .)
+
+          {
+            echo "stable=$stable"
+            echo "branding=$branding"
+            echo "released=$released"
+            echo "matrix=$matrix"
+          } >> "$GITHUB_OUTPUT"
+          echo "stable $stable, beta $beta, branding $branding, released=$released" >> "$GITHUB_STEP_SUMMARY"
+
+  e2e:
+    needs: resolve
+    if: needs.resolve.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    # Beta is an early warning; it never blocks a release.
+    continue-on-error: ${{ matrix.channel == 'beta' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.resolve.outputs.matrix) }}
+    env:
+      RELEASE: ${{ matrix.ha }}-${{ needs.resolve.outputs.branding }}
+    steps:
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
@@ -69,19 +85,46 @@ jobs:
       - name: Install Playwright
         run: npm install && npx playwright install --with-deps chromium
 
-      - name: Onboard and verify auto-setup
+      - name: Check default_config list against upstream
+        run: |
+          docker run --rm --entrypoint python3 \
+            -v "$PWD/tests/check_default_config.py:/check.py:ro" \
+            -v "$PWD/deploy/client/configuration.yaml:/conf.yaml:ro" \
+            ghcr.io/home-assistant/home-assistant:${{ matrix.ha }} /check.py /conf.yaml
+
+      - name: Existing box, before Remoto
+        if: matrix.start == 'existing'
+        run: |
+          # A running stock installation with its own data and no Remoto anywhere.
+          sudo mkdir -p /srv/ha/config
+          printf 'default_config:\nfrontend:\n' | sudo tee /srv/ha/config/configuration.yaml >/dev/null
+          docker run -d --name homeassistant --network host -v /srv/ha/config:/config \
+            ghcr.io/home-assistant/home-assistant:${{ matrix.ha }}
+          PHASE=stock npm run setup:ha
+
+      - name: Install with setup.sh (${{ matrix.start }} box)
+        run: sudo REMOTO_SOURCE="$PWD" bash deploy/client/setup.sh local "$RELEASE"
+
+      - name: Verify auto-setup and kept data
+        env:
+          EXPECT_MARKER: ${{ matrix.start == 'existing' && '1' || '' }}
         run: npm run setup:ha
 
       - name: Branding checks
         run: npm run test:e2e
 
+      - name: Run the update again
+        run: |
+          sudo REMOTO_SOURCE="$PWD" /opt/remoto/update.sh "$RELEASE"
+          curl -fsS http://localhost:8123/auth/authorize | grep -q '<title>Remoto</title>'
+
       - name: Config warnings
         if: always()
-        run: docker logs ha 2>&1 | grep -iE "does not support YAML|invalid config|setup failed|remoto" || true
+        run: docker logs homeassistant 2>&1 | grep -iE "does not support YAML|invalid config|setup failed|remoto" || true
 
       - name: Logs on failure
         if: failure()
-        run: docker logs ha | tail -200
+        run: docker logs homeassistant 2>&1 | tail -200
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -91,17 +134,59 @@ jobs:
             test-results/
             playwright-report/
 
-      # Only images that passed every check above are published.
-      - name: Publish image
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.start == 'fresh'
+      - name: Report a failed daily run
+        if: failure() && github.event_name == 'schedule'
+        env:
+          TITLE: Branding check failed on upstream ${{ matrix.ha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker tag remoto:test $IMAGE:$HA_FULL
-          docker tag remoto:test $IMAGE:$HA_FULL-$BRANDING
-          docker push $IMAGE:$HA_FULL
-          docker push $IMAGE:$HA_FULL-$BRANDING
-          if [ "${{ matrix.channel }}" = "pinned" ]; then
-            docker tag remoto:test $IMAGE:latest
-            docker push $IMAGE:latest
+          if [ -z "$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[].number')" ]; then
+            printf '%s\n\n%s\n%s\n' \
+              "The ${{ matrix.channel }} check (${{ matrix.start }} box) failed: $RUN_URL" \
+              "No release was created for this version, so client boxes stay on the last tested one." \
+              "Fix www/remoto.js or pages.py, then bump version in manifest.json." \
+              | gh issue create --title "$TITLE" --body-file -
           fi
-          echo "### Published \`$IMAGE:$HA_FULL\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # Only a pair that passed every stable check above is released.
+  release:
+    needs: [resolve, e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.resolve.outputs.released == 'false'
+    runs-on: ubuntu-latest
+    env:
+      STABLE: ${{ needs.resolve.outputs.stable }}
+      BRANDING: ${{ needs.resolve.outputs.branding }}
+      RELEASE: ${{ needs.resolve.outputs.stable }}-${{ needs.resolve.outputs.branding }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create the release as a pre-release
+        run: |
+          # Boxes only follow full releases, so nothing reaches them yet.
+          gh release view "$RELEASE" >/dev/null 2>&1 || gh release create "$RELEASE" --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Remoto $BRANDING on $STABLE" \
+            --notes "Branding $BRANDING passed every check on upstream $STABLE. Move a box to it with /opt/remoto/update.sh."
+
+      - name: Install it the way a technician does
+        run: |
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw" \
+            "https://api.github.com/repos/${{ github.repository }}/contents/deploy/client/setup.sh?ref=$RELEASE" \
+            | sudo bash -s -- "$GH_TOKEN" "$RELEASE"
+          curl -fsS http://localhost:8123/auth/authorize | grep -q '<title>Remoto</title>'
+
+      - name: Publish the release
+        run: |
+          gh release edit "$RELEASE" --prerelease=false --latest
+          echo "### Released \`$RELEASE\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report a failed release
+        if: failure()
+        env:
+          TITLE: Release ${{ needs.resolve.outputs.stable }}-${{ needs.resolve.outputs.branding }} failed its install test
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[].number')" ]; then
+            printf '%s\n\n%s\n' "$RUN_URL" "The release stays a pre-release, so client boxes do not get it." \
+              | gh issue create --title "$TITLE" --body-file -
+          fi

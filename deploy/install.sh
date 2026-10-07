@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Install or update Remoto Branding over SSH, for boxes that can't use the
-# Remoto Docker image (HA OS). Docker boxes: use deploy/client/setup.sh instead.
+# Install or update Remoto Branding over SSH, for boxes that don't run Docker
+# themselves (HA OS). Docker boxes: use deploy/client/setup.sh instead.
 #
 #   deploy/install.sh <ssh-host> [config-dir] [restart-cmd]
 #

@@ -1,4 +1,4 @@
-# Starter configuration written by the Remoto image on a brand-new box.
+# Starter configuration written by install-branding.sh on a brand-new box.
 homeassistant:
   name: "Remoto"
 

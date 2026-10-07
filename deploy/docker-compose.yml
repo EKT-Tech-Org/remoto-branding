@@ -1,13 +1,10 @@
-# Local test instance, built from this repo.
-#   docker compose -f deploy/docker-compose.yml up -d --build   -> http://localhost:8123
+# Local test instance on the official image.
+#   sh deploy/client/install-branding.sh . deploy/config
+#   docker compose -f deploy/docker-compose.yml up -d   -> http://localhost:8123
 services:
   homeassistant:
     container_name: remoto
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      args:
-        HA_VERSION: ${HA_VERSION}
+    image: ghcr.io/home-assistant/home-assistant:${HA_VERSION}
     restart: unless-stopped
     environment:
       - TZ=${TZ}
