@@ -42,6 +42,7 @@ Published tags: GitHub → repo → Packages → `remoto`. A tag is only publish
 | `brand/` | Official Remoto logos and favicons (source for `www/icons`) |
 | `tests/` | Playwright branding checks and the default_config drift check |
 | `docs/technician-test-plan.csv` | Field test checklist |
+| `docs/technician-laptop-setup.md` | Run Remoto on a technician's laptop (demo / onboarding practice) |
 
 ## License
 Builds on Apache-2.0 licensed software. See `custom_components/remoto_branding/NOTICE`.
