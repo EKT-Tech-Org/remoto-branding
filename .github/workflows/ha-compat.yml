@@ -57,7 +57,7 @@ jobs:
           mkdir -p ci-config
           if [ "${{ matrix.start }}" = "existing" ]; then
             # An existing box: its own config, no Remoto anywhere yet.
-            printf 'default_config:\nfrontend:\nhistory:\n  purge_keep_days: 5\n' > ci-config/configuration.yaml
+            printf 'default_config:\nfrontend:\nhistory:\n  exclude:\n    domains: [sun]\n' > ci-config/configuration.yaml
           fi
           docker run -d --name ha -p 8123:8123 -v "$PWD/ci-config:/config" remoto:test
           sleep 5 && docker logs ha 2>&1 | grep "\[remoto\]"
