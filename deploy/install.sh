@@ -20,6 +20,9 @@ ssh "$HOST" "mkdir -p '$CONFIG_DIR/custom_components'"
 # tar over ssh works on both Docker hosts and the HA OS SSH add-on (no rsync needed)
 tar -C "$ROOT/custom_components" --exclude '__pycache__' -czf - remoto_branding \
   | ssh "$HOST" "rm -rf '$CONFIG_DIR/custom_components/remoto_branding' && tar -C '$CONFIG_DIR/custom_components' -xzf -"
+# Turn zeroconf off (same list and script as the Docker image).
+ITEMS="$(awk '/^# <<< default_config/{f=0} f&&/^[a-z0-9_]+:/{sub(":.*","");print} /^# >>> default_config/{f=1}' "$ROOT/docker/configuration.yaml" | tr '\n' ' ')"
+ssh "$HOST" "sh -s -- '$CONFIG_DIR/configuration.yaml' $ITEMS" < "$ROOT/docker/replace-default-config.sh"
 # Enable once; the integration then sets itself up and installs the Remoto theme.
 ssh "$HOST" "grep -q '^remoto_branding:' '$CONFIG_DIR/configuration.yaml' || printf '\n# Added by Remoto\nremoto_branding:\n' >> '$CONFIG_DIR/configuration.yaml'"
 

@@ -13,14 +13,15 @@ curl -fsSL -H "Authorization: token <TOKEN>" \
   https://raw.githubusercontent.com/EKT-Tech-Org/remoto-branding/main/deploy/client/setup.sh \
   | bash -s -- <TOKEN>
 ```
-- `<TOKEN>`: a GitHub classic token with `read:packages` + `repo`. Keep it in the office password manager.
+- `<TOKEN>`: a GitHub token with read access to this repo (to download the script). Keep it in the office password manager.
+- The image itself is public: `docker pull ghcr.io/ekt-tech-org/remoto:<tag>` works without a login, on Intel/AMD boxes and on Raspberry Pi (64-bit OS).
 - Existing box: if a container named `homeassistant` is already running, its config folder is reused and backed up first. Devices, automations and history are kept.
 
 **Upgrade:** set `REMOTO_VERSION` in `/opt/remoto/.env` to a published tag, then run `docker compose up -d` in `/opt/remoto`.
 Published tags: GitHub → repo → Packages → `remoto`. A tag is only published after all checks pass.
 
 ### HA OS boxes
-`deploy/install.sh root@<box> /config "ha core restart"` (needs the SSH add-on). It copies the integration and enables it, and the integration then sets itself up.
+`deploy/install.sh root@<box> /config "ha core restart"` (needs the SSH add-on). It copies the integration, enables it and turns zeroconf off, and the integration then sets itself up.
 
 ### Still manual, per client
 1. Create the client's user as **non-admin** (Settings → People).

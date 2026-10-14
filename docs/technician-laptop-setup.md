@@ -6,16 +6,11 @@ It runs on your laptop only. Nothing here touches a client box.
 ## 1. One-time preparation
 1. Install **Docker Desktop** from docker.com (Windows or Mac) and start it. Wait until it says *Engine running*.
 2. Open a terminal: **PowerShell** on Windows, **Terminal** on Mac.
-3. Log in to the Remoto image registry (once per laptop):
-   ```
-   docker login ghcr.io
-   ```
-   Username: anything. Password: the office token (needs `read:packages`, in the office password manager).
 
 ## 2. Start Remoto
 Copy this as **one line**. It works the same in PowerShell and on a Mac:
 ```
-docker run -d --name remoto --platform linux/amd64 -p 8123:8123 -v remoto-config:/config ghcr.io/ekt-tech-org/remoto:2026.9.4
+docker run -d --name remoto -p 8123:8123 -v remoto-config:/config ghcr.io/ekt-tech-org/remoto:2026.9.4
 ```
 The first time it downloads the image (a few minutes). Then wait 1–2 minutes for the first start.
 
@@ -42,7 +37,6 @@ Open **http://localhost:8123** in your browser.
 | Remove completely and start over | `docker rm -f remoto` then `docker volume rm remoto-config` |
 
 ## Troubleshooting
-- **`unauthorized` when downloading**: run step 1.3 again with the office token.
+- **`unauthorized` when downloading**: the image is not public yet. Tell the office.
 - **`port is already allocated`**: something else uses port 8123. Stop it, or change `-p 8123:8123` to `-p 8124:8123` and open http://localhost:8124.
 - **Page does not load**: wait another minute; `docker logs remoto` shows progress.
-- **Slow on a Mac with Apple chip (M1–M4)**: expected, the image runs under emulation. Fine for demos.
