@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install or update Remoto Branding on a client box over SSH.
+# Install or update Remoto Branding over SSH, for boxes that can't use the
+# Remoto Docker image (HA OS). Docker boxes: use deploy/client/setup.sh instead.
 #
 #   deploy/install.sh <ssh-host> [config-dir] [restart-cmd]
 #
@@ -15,11 +16,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION="$(python3 -c "import json;print(json.load(open('$ROOT/custom_components/remoto_branding/manifest.json'))['version'])")"
 echo "→ Remoto Branding $VERSION → $HOST:$CONFIG_DIR"
 
-ssh "$HOST" "mkdir -p '$CONFIG_DIR/custom_components' '$CONFIG_DIR/themes'"
+ssh "$HOST" "mkdir -p '$CONFIG_DIR/custom_components'"
 # tar over ssh works on both Docker hosts and the HA OS SSH add-on (no rsync needed)
 tar -C "$ROOT/custom_components" --exclude '__pycache__' -czf - remoto_branding \
   | ssh "$HOST" "rm -rf '$CONFIG_DIR/custom_components/remoto_branding' && tar -C '$CONFIG_DIR/custom_components' -xzf -"
-tar -C "$ROOT/themes" -czf - remoto.yaml | ssh "$HOST" "tar -C '$CONFIG_DIR/themes' -xzf -"
+# Enable once; the integration then sets itself up and installs the Remoto theme.
+ssh "$HOST" "grep -q '^remoto_branding:' '$CONFIG_DIR/configuration.yaml' || printf '\n# Added by Remoto\nremoto_branding:\n' >> '$CONFIG_DIR/configuration.yaml'"
 
 echo "→ restarting: $RESTART"
 ssh "$HOST" "$RESTART"

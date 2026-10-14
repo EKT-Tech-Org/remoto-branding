@@ -1,0 +1,14 @@
+# Client box. Upgrade: change REMOTO_VERSION in .env, then `docker compose up -d`.
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/ekt-tech-org/remoto:${REMOTO_VERSION:-latest}
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      - TZ=${TZ:-Asia/Beirut}
+    volumes:
+      - ${CONFIG_DIR:-./config}:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro

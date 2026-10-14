@@ -1,6 +1,5 @@
 # Local HA test instance
 deploy/config/*
-!deploy/config/configuration.yaml
 # Node / Playwright
 node_modules/
 tests/e2e/.auth/

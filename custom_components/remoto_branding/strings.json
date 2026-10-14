@@ -14,7 +14,8 @@
       "invalid_color": "Use a 6-digit hex color like #553D9F."
     },
     "abort": {
-      "single_instance_allowed": "Remoto Branding is already set up."
+      "single_instance_allowed": "Remoto Branding is already set up.",
+      "invalid_yaml": "Invalid remoto_branding settings in configuration.yaml."
     }
   },
   "options": {

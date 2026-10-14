@@ -69,6 +69,16 @@ class RemotoBrandingConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=_schema(user_input or {}), errors=errors
         )
 
+    async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
+        """Set up from `remoto_branding:` in configuration.yaml."""
+        data = {
+            CONF_BRAND_NAME: import_data.get(CONF_BRAND_NAME, DEFAULT_BRAND_NAME),
+            CONF_PRIMARY_COLOR: import_data.get(CONF_PRIMARY_COLOR, DEFAULT_PRIMARY_COLOR),
+        }
+        if _validate(data):
+            return self.async_abort(reason="invalid_yaml")
+        return self.async_create_entry(title=data[CONF_BRAND_NAME], data=data)
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
