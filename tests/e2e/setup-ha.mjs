@@ -86,6 +86,10 @@ for (let i = 0; i < 15 && !entries.length; i++) {
 }
 if (entries[0]?.state !== "loaded") throw new Error(`integration not auto-configured: ${JSON.stringify(entries)}`);
 
+// zeroconf announces the upstream product name on the LAN; it must not be loaded.
+const { components } = await get("/api/config");
+if (components.includes("zeroconf")) throw new Error("zeroconf is loaded");
+
 const conn = await ws(access_token);
 const { user } = await conn.call({
   type: "config/auth/create",
@@ -102,4 +106,4 @@ const themes = await conn.call({ type: "frontend/get_themes" });
 if (themes.default_theme !== "Remoto" || !themes.themes.Remoto)
   throw new Error(`Remoto theme not default: ${themes.default_theme}`);
 conn.close();
-console.log("✓ onboarded; integration auto-configured; Remoto theme is default; client user created");
+console.log("✓ onboarded; integration auto-configured; zeroconf off; Remoto theme is default; client user created");

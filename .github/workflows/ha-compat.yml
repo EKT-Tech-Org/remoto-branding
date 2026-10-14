@@ -57,10 +57,13 @@ jobs:
           mkdir -p ci-config
           if [ "${{ matrix.start }}" = "existing" ]; then
             # An existing box: its own config, no Remoto anywhere yet.
-            printf 'default_config:\nfrontend:\n' > ci-config/configuration.yaml
+            printf 'default_config:\nfrontend:\nhistory:\n  purge_keep_days: 5\n' > ci-config/configuration.yaml
           fi
           docker run -d --name ha -p 8123:8123 -v "$PWD/ci-config:/config" remoto:test
           sleep 5 && docker logs ha 2>&1 | grep "\[remoto\]"
+          if grep -q '^default_config:' ci-config/configuration.yaml; then
+            echo "default_config still present (zeroconf would stay on)"; exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -92,16 +95,19 @@ jobs:
             playwright-report/
 
       # Only images that passed every check above are published.
-      - name: Publish image
+      # One tag serves both Intel/AMD boxes and Raspberry Pi (64-bit OS); Docker
+      # picks the right one. The Dockerfile only copies files, so no emulation is needed.
+      - uses: docker/setup-buildx-action@v3
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.start == 'fresh'
+
+      - name: Publish image (amd64 + arm64)
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && matrix.start == 'fresh'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker tag remoto:test $IMAGE:$HA_FULL
-          docker tag remoto:test $IMAGE:$HA_FULL-$BRANDING
-          docker push $IMAGE:$HA_FULL
-          docker push $IMAGE:$HA_FULL-$BRANDING
-          if [ "${{ matrix.channel }}" = "pinned" ]; then
-            docker tag remoto:test $IMAGE:latest
-            docker push $IMAGE:latest
-          fi
-          echo "### Published \`$IMAGE:$HA_FULL\`" >> "$GITHUB_STEP_SUMMARY"
+          TAGS="-t $IMAGE:$HA_FULL -t $IMAGE:$HA_FULL-$BRANDING"
+          if [ "${{ matrix.channel }}" = "pinned" ]; then TAGS="$TAGS -t $IMAGE:latest"; fi
+          # Build on the exact upstream version that was just tested, not the moving "stable" tag.
+          docker buildx build --platform linux/amd64,linux/arm64 -f docker/Dockerfile \
+            --build-arg HA_VERSION=$HA_FULL $TAGS --push .
+          docker buildx imagetools inspect $IMAGE:$HA_FULL
+          echo "### Published \`$IMAGE:$HA_FULL\` (amd64 + arm64)" >> "$GITHUB_STEP_SUMMARY"
