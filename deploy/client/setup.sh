@@ -43,10 +43,11 @@ CONFIG_DIR=$CONFIG_DIR
 TZ=$(cat /etc/timezone 2>/dev/null || echo Asia/Beirut)
 ENV
 
+cd "$DIR"
+# Pull first, so a failed download leaves the old container running.
+docker compose pull
+
 # Replace the stock container (its data stays in $CONFIG_DIR).
 docker rm -f homeassistant >/dev/null 2>&1 || true
-
-cd "$DIR"
-docker compose pull
 docker compose up -d
 echo "✓ Remoto $VERSION running. Open http://$(hostname -I 2>/dev/null | awk '{print $1}'):8123"
