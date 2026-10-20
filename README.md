@@ -4,6 +4,12 @@ White-labels the smart-home web UI as **Remoto**: the browser tab, the login pag
 
 ## Deploy
 
+### Optional iOS dashboard design
+The [iOS design package](design/ios/README.md) adds a dashboard starter, filled
+gauges, flat icons, a YAML styling tool and an [offline preview](design/ios/preview.html).
+It uses the existing HACS iOS Themes project. Try it on a separate test dashboard
+before deploying it to clients; dashboard activation is separate from the image.
+
 ### Docker boxes (recommended): the Remoto image
 The image is the upstream image with Remoto built in. It installs the integration and the theme by itself, with **nothing to configure**.
 

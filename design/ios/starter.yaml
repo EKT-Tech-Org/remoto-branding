@@ -1,0 +1,108 @@
+title: Remoto
+background: var(--background-image)
+views:
+- title: Overview
+  path: overview
+  icon: mdi:view-dashboard-outline
+  theme: ios-dark-mode-blue-red
+  type: masonry
+  cards:
+  - type: markdown
+    content: '# Site overview
+
+      Example configuration — replace entity IDs and verify gauge ranges.
+
+      '
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: tile
+      entity: binary_sensor.example_grid_connected
+      name: Utility supply
+      icon: mdi:transmission-tower
+      tap_action:
+        action: more-info
+      icon_tap_action:
+        action: more-info
+      card_mod:
+        style: "\n/* Remoto iOS v1 */\nha-card {\n  background: var(--ha-card-background, var(--card-background-color));\n\
+          \  color: var(--primary-text-color);\n  border-radius: 18px;\n  border: none;\n  box-shadow: 0 2px 4px rgba(0, 0,\
+          \ 0, 0.20);\n  overflow: hidden;\n  --mdc-icon-size: 24px;\n}\nha-state-icon, ha-icon { --mdc-icon-size: 24px; }\n\
+          ha-tile-icon {\n  --tile-icon-opacity: 0 !important;\n  --tile-icon-hover-opacity: 0 !important;\n}\nmushroom-shape-icon\
+          \ { --icon-symbol-size: 24px; }\n"
+    - type: tile
+      entity: binary_sensor.example_generator_running
+      name: Generator
+      icon: mdi:engine-outline
+      tap_action:
+        action: more-info
+      icon_tap_action:
+        action: more-info
+      card_mod:
+        style: "\n/* Remoto iOS v1 */\nha-card {\n  background: var(--ha-card-background, var(--card-background-color));\n\
+          \  color: var(--primary-text-color);\n  border-radius: 18px;\n  border: none;\n  box-shadow: 0 2px 4px rgba(0, 0,\
+          \ 0, 0.20);\n  overflow: hidden;\n  --mdc-icon-size: 24px;\n}\nha-state-icon, ha-icon { --mdc-icon-size: 24px; }\n\
+          ha-tile-icon {\n  --tile-icon-opacity: 0 !important;\n  --tile-icon-hover-opacity: 0 !important;\n}\nmushroom-shape-icon\
+          \ { --icon-symbol-size: 24px; }\n"
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: gauge
+      entity: sensor.example_voltage_l1
+      name: Phase L1 voltage
+      min: 180
+      max: 260
+      unit: V
+      needle: false
+      card_mod:
+        style: "\n/* Remoto iOS v1 */\nha-card {\n  background: var(--ha-card-background, var(--card-background-color));\n\
+          \  color: var(--primary-text-color);\n  border-radius: 18px;\n  border: none;\n  box-shadow: 0 2px 4px rgba(0, 0,\
+          \ 0, 0.20);\n  overflow: hidden;\n  --mdc-icon-size: 24px;\n}\nha-state-icon, ha-icon { --mdc-icon-size: 24px; }\n\
+          ha-tile-icon {\n  --tile-icon-opacity: 0 !important;\n  --tile-icon-hover-opacity: 0 !important;\n}\nmushroom-shape-icon\
+          \ { --icon-symbol-size: 24px; }\n"
+    - type: gauge
+      entity: sensor.example_generator_load
+      name: Generator load
+      min: 0
+      max: 100
+      unit: '%'
+      needle: false
+      severity:
+        green: 0
+        yellow: 70
+        red: 90
+      card_mod:
+        style: "\n/* Remoto iOS v1 */\nha-card {\n  background: var(--ha-card-background, var(--card-background-color));\n\
+          \  color: var(--primary-text-color);\n  border-radius: 18px;\n  border: none;\n  box-shadow: 0 2px 4px rgba(0, 0,\
+          \ 0, 0.20);\n  overflow: hidden;\n  --mdc-icon-size: 24px;\n}\nha-state-icon, ha-icon { --mdc-icon-size: 24px; }\n\
+          ha-tile-icon {\n  --tile-icon-opacity: 0 !important;\n  --tile-icon-hover-opacity: 0 !important;\n}\nmushroom-shape-icon\
+          \ { --icon-symbol-size: 24px; }\n"
+  - type: entities
+    title: Readings
+    show_header_toggle: false
+    entities:
+    - entity: sensor.example_power
+      name: Active power
+      icon: mdi:flash-outline
+    - entity: sensor.example_frequency
+      name: Frequency
+      icon: mdi:sine-wave
+    - entity: sensor.example_temperature
+      name: Room temperature
+      icon: mdi:thermometer
+    card_mod:
+      style: "\n/* Remoto iOS v1 */\nha-card {\n  background: var(--ha-card-background, var(--card-background-color));\n \
+        \ color: var(--primary-text-color);\n  border-radius: 18px;\n  border: none;\n  box-shadow: 0 2px 4px rgba(0, 0, 0,\
+        \ 0.20);\n  overflow: hidden;\n  --mdc-icon-size: 24px;\n}\nha-state-icon, ha-icon { --mdc-icon-size: 24px; }\nha-tile-icon\
+        \ {\n  --tile-icon-opacity: 0 !important;\n  --tile-icon-hover-opacity: 0 !important;\n}\nmushroom-shape-icon { --icon-symbol-size:\
+        \ 24px; }\n"
+  - type: history-graph
+    title: Supply history
+    hours_to_show: 24
+    entities:
+    - entity: binary_sensor.example_grid_connected
+      name: Utility
+    - entity: binary_sensor.example_generator_running
+      name: Generator

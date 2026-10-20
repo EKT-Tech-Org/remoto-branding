@@ -1,0 +1,77 @@
+# Example entities and ranges only. Map to your site before importing.
+title: Remoto
+background: var(--background-image)
+views:
+  - title: Overview
+    path: overview
+    icon: mdi:view-dashboard-outline
+    theme: ios-dark-mode-blue-red
+    type: masonry
+    cards:
+      - type: markdown
+        content: |
+          # Site overview
+          Example configuration — replace entity IDs and verify gauge ranges.
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: tile
+            entity: binary_sensor.example_grid_connected
+            name: Utility supply
+            icon: mdi:transmission-tower
+            tap_action:
+              action: more-info
+            icon_tap_action:
+              action: more-info
+          - type: tile
+            entity: binary_sensor.example_generator_running
+            name: Generator
+            icon: mdi:engine-outline
+            tap_action:
+              action: more-info
+            icon_tap_action:
+              action: more-info
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: gauge
+            entity: sensor.example_voltage_l1
+            name: Phase L1 voltage
+            min: 180
+            max: 260
+            unit: V
+            needle: false
+          - type: gauge
+            entity: sensor.example_generator_load
+            name: Generator load
+            min: 0
+            max: 100
+            unit: '%'
+            needle: false
+            severity:
+              green: 0
+              yellow: 70
+              red: 90
+      - type: entities
+        title: Readings
+        show_header_toggle: false
+        entities:
+          - entity: sensor.example_power
+            name: Active power
+            icon: mdi:flash-outline
+          - entity: sensor.example_frequency
+            name: Frequency
+            icon: mdi:sine-wave
+          - entity: sensor.example_temperature
+            name: Room temperature
+            icon: mdi:thermometer
+      - type: history-graph
+        title: Supply history
+        hours_to_show: 24
+        entities:
+          - entity: binary_sensor.example_grid_connected
+            name: Utility
+          - entity: binary_sensor.example_generator_running
+            name: Generator
